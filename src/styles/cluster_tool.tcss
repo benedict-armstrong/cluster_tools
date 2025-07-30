@@ -8,6 +8,7 @@ Header {
     height: 2;
     background: $primary;
     color: $text;
+    content-align: left middle;
 }
 
 Footer {
@@ -16,9 +17,10 @@ Footer {
     color: $text;
 }
 
-/* Main Layout */
-Horizontal {
-    height: 1fr;
+.container {
+    border: round $border;
+    padding: 1;
+    margin: 1;
 }
 
 #sidebar {
@@ -34,15 +36,8 @@ Horizontal {
 }
 
 /* HTCondor Job List Styling */
-.condor-job-list {
-    margin: 1;
-    height: 1fr;
-    background: $background;
-}
-
 .job-list-header {
     height: 2;
-    background: $surface;
     content-align: left middle;
     text-style: bold;
     color: $text;
@@ -51,7 +46,6 @@ Horizontal {
 
 #job-list {
     height: 1fr;
-    background: $background;
     scrollbar-background: $surface;
     scrollbar-color: $accent;
 }
@@ -59,12 +53,6 @@ Horizontal {
 .job-item {
     height: 8;
     padding: 1;
-    background: $surface;
-    border-bottom: solid $border;
-}
-
-.job-item:hover {
-    background: $surface-lighten-1;
 }
 
 .job-line-1 {
@@ -135,6 +123,31 @@ Horizontal {
 
 .status-unexpanded {
     color: $text-muted;
+}
+
+/* File Viewer Styling */
+.file-viewer {
+    height: 1fr;
+    margin: 1;
+    border: solid $border;
+    background: $surface;
+}
+
+.file-viewer-header {
+    height: 2;
+    background: $primary;
+    color: $text;
+    content-align: left middle;
+    text-style: bold;
+    padding-left: 1;
+}
+
+#file-content {
+    height: 1fr;
+    background: $background;
+    color: $text;
+    scrollbar-background: $surface;
+    scrollbar-color: $accent;
 }
 
 /* Color Scheme - Dark theme similar to the screenshot */

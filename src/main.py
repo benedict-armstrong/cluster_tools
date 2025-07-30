@@ -1,11 +1,12 @@
 import typer
 import logging
 from textual.app import App
-from textual.containers import Horizontal, Vertical
-from textual.widgets import Header, Footer, Placeholder
+from textual.containers import Horizontal, Vertical, Container
+from textual.widgets import Header, Footer
 
 from .config import Config
 from .widgets.sidebar import JobsSidebar
+from .widgets.job_file_viewer import JobFileViewer
 from .ssh.cluster import SSHClient
 from .htcondor.htcondor import HTCondorClient
 
@@ -55,12 +56,12 @@ class ClusterApp(App):
         """Simple layout for cluster monitoring."""
         yield Header()
         with Horizontal():
-            yield JobsSidebar(id="sidebar")
+            yield JobsSidebar(id="sidebar", classes="container")
             with Vertical(id="main-content"):
-                yield Placeholder("Main content")
+                yield JobFileViewer(ssh_client=None, id="job-file-viewer")
         yield Footer()
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         """Initialize SSH and HTCondor clients when the app starts."""
         self._initialize_clients()
 
@@ -87,6 +88,10 @@ class ClusterApp(App):
             sidebar = self.query_one("#sidebar", JobsSidebar)
             sidebar.set_htcondor_client(self.htcondor_client, self.config.username)
 
+            # Set up the job file viewer with the SSH client
+            job_file_viewer = self.query_one("#job-file-viewer", JobFileViewer)
+            job_file_viewer.set_ssh_client(self.ssh_client)
+
         except Exception as e:
             self.logger.error(f"Failed to initialize clients: {e}")
             # Could show an error message to the user here
@@ -96,7 +101,9 @@ class ClusterApp(App):
         self.logger.info(
             f"Selected job: {event.job.job_id} ({event.job.job_status_name})"
         )
-        # Here you could update the main content area with job details
+        # Update the job file viewer with the selected job
+        job_file_viewer = self.query_one("#job-file-viewer", JobFileViewer)
+        job_file_viewer.set_job(event.job)
 
     def on_unmount(self) -> None:
         """Clean up connections when the app shuts down."""

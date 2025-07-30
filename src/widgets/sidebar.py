@@ -22,10 +22,12 @@ class JobsSidebar(Vertical):
         htcondor_client: Optional[HTCondorClient] = None,
         username: Optional[str] = None,
         id: str = "sidebar",
+        classes: str = "",
     ):
-        super().__init__(id=id)
+        super().__init__(id=id, classes=classes)
         self.htcondor_client = htcondor_client
         self.username = username
+        self.border_title = f"Cluster Jobs for {username}"
 
     def compose(self) -> ComposeResult:
         """Compose the sidebar layout."""
