@@ -22,6 +22,11 @@ class FileTailViewer(Vertical):
         tail_lines: int = 50,
         **kwargs,
     ):
+        # Add focus-container class
+        if "classes" in kwargs:
+            kwargs["classes"] = f"{kwargs['classes']} focus-container".strip()
+        else:
+            kwargs["classes"] = "focus-container"
         super().__init__(**kwargs)
         self.title = title
         self.ssh_client = ssh_client
@@ -39,7 +44,7 @@ class FileTailViewer(Vertical):
             show_line_numbers=True,
             highlight_cursor_line=False,
             show_cursor=False,
-            classes="file-content",
+            classes="file-content focus-container",
         )
         yield self.text_area
 

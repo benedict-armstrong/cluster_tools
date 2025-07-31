@@ -15,6 +15,11 @@ class JobFileViewer(Vertical):
     current_job: reactive[Optional[CondorJob]] = reactive(None)
 
     def __init__(self, ssh_client: Optional[SSHClient] = None, **kwargs):
+        # Add focus-container class
+        if "classes" in kwargs:
+            kwargs["classes"] = f"{kwargs['classes']} focus-container".strip()
+        else:
+            kwargs["classes"] = "focus-container"
         super().__init__(**kwargs)
         self.ssh_client = ssh_client
 

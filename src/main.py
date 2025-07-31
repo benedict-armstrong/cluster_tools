@@ -15,13 +15,9 @@ cli = typer.Typer()
 
 @cli.command()
 def cluster(
-    hostname: str = typer.Option(
-        "login.cluster.is.localnet", help="The hostname of the cluster"
-    ),
+    hostname: str = typer.Option(help="The hostname of the cluster"),
     port: int = typer.Option(22, help="The port to connect to the cluster"),
-    username: str = typer.Option(
-        "barmstrong", help="The username to connect to the cluster"
-    ),
+    username: str = typer.Option(help="The username to connect to the cluster"),
     private_key_path: str | None = typer.Option(
         None, help="The path to the private key to connect to the cluster"
     ),
@@ -41,16 +37,12 @@ class ClusterApp(App):
         ("r", "refresh_data", "Refresh data"),
         ("c", "cancel_job", "Cancel selected job"),
         ("s", "ssh_to_job", "SSH to selected job node"),
+        ("q", "quit", "Quit"),
     ]
 
-    def __init__(self, config: Config | None = None):
+    def __init__(self, config: Config):
         super().__init__()
-        self.config = config or Config(
-            hostname="login.cluster.is.localnet",
-            port=22,
-            username="barmstrong",
-            private_key_path=None,
-        )
+        self.config = config
         self.ssh_client = None
         self.htcondor_client = None
         self.title = "Condor Client"
@@ -73,6 +65,10 @@ class ClusterApp(App):
         self.theme = (
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
+
+    def action_quit(self) -> None:
+        """An action to quit the application."""
+        self.exit()
 
     def action_refresh_data(self) -> None:
         """An action to refresh all data."""

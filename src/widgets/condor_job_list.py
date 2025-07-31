@@ -18,13 +18,18 @@ class CondorJobItem(ListItem):
     """A single job item in the job list."""
 
     def __init__(self, job: CondorJob, *args, **kwargs):
+        # Add focus-container class
+        if "classes" in kwargs:
+            kwargs["classes"] = f"{kwargs['classes']} focus-container".strip()
+        else:
+            kwargs["classes"] = "focus-container"
         super().__init__(*args, **kwargs)
         self.job = job
+        self.border_title = self.job.job_id
 
     def compose(self) -> ComposeResult:
         """Compose the job item layout."""
-        with Vertical(classes="job-item") as cont:
-            cont.border_title = self.job.job_id
+        with Vertical(classes="job-item"):
             with Horizontal(classes="job-line-1"):
                 yield Static(self._get_status_indicator(), classes="status-indicator")
                 yield Static(self._get_main_info(), classes="job-main-info")
@@ -168,6 +173,11 @@ class CondorJobList(Widget):
     selected_job: reactive[Optional[CondorJob]] = reactive(None)
 
     def __init__(self, jobs: Optional[List[CondorJob]] = None, *args, **kwargs):
+        # Add focus-container class
+        if "classes" in kwargs:
+            kwargs["classes"] = f"{kwargs['classes']} focus-container".strip()
+        else:
+            kwargs["classes"] = "focus-container"
         super().__init__(*args, **kwargs)
         if jobs:
             self.jobs = jobs
@@ -175,8 +185,8 @@ class CondorJobList(Widget):
     def compose(self) -> ComposeResult:
         """Compose the job list widget."""
         with Vertical(classes="condor-job-list"):
-            yield Static("Running Jobs", classes="job-list-header")
-            yield ListView(id="job-list")
+            yield Static("My Jobs", classes="job-list-header")
+            yield ListView(id="job-list", classes="focus-container")
 
     def on_mount(self) -> None:
         """Set up the widget when mounted."""
@@ -210,6 +220,11 @@ class CondorJobList(Widget):
         # Select the first job by default if we have jobs
         if sorted_jobs:
             job_list.index = 0
+            # Apply selected styling
+            self._update_selection_styling(0)
+            # Also update our selected_job and post the selection message
+            self.selected_job = sorted_jobs[0]
+            self.post_message(self.JobSelected(sorted_jobs[0]))
 
     def _get_status_priority(self, status: int) -> int:
         """Get priority for sorting jobs by status."""
@@ -226,9 +241,26 @@ class CondorJobList(Widget):
         }
         return priority_map.get(status, 8)
 
+    def _update_selection_styling(self, selected_index: int) -> None:
+        """Update the selection styling for job items."""
+        job_list = self.query_one("#job-list", ListView)
+        for i, item in enumerate(job_list.children):
+            if isinstance(item, CondorJobItem):
+                if i == selected_index:
+                    item.add_class("job-item-selected")
+                else:
+                    item.remove_class("job-item-selected")
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle job selection."""
         if isinstance(event.item, CondorJobItem):
+            # Get the index of the selected item
+            job_list = self.query_one("#job-list", ListView)
+            selected_index = list(job_list.children).index(event.item)
+
+            # Update selection styling
+            self._update_selection_styling(selected_index)
+
             self.selected_job = event.item.job
             self.post_message(self.JobSelected(event.item.job))
 

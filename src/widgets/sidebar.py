@@ -24,6 +24,7 @@ class JobsSidebar(Vertical):
         id: str = "sidebar",
         classes: str = "",
     ):
+        classes = f"{classes} focus-container".strip()
         super().__init__(id=id, classes=classes)
         self.htcondor_client = htcondor_client
         self.username = username

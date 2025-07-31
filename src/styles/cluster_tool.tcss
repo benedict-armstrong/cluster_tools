@@ -48,12 +48,29 @@ Footer {
 #job-list {
     height: 1fr;
     background: transparent;
+    border: round transparent;
 }
 
 .job-item {
     height: 8;
     padding: 1;
     border: round $border;
+}
+
+ListItem:hover {
+    background: $surface-lighten-1;
+}
+
+ListItem.job-item-selected {
+    background: $primary;
+}
+
+ListItem.job-item-selected .job-main-info {
+    color: $text;
+}
+
+ListItem.job-item-selected .job-resource-info {
+    color: $text-muted;
 }
 
 .job-line-1 {
@@ -149,6 +166,11 @@ Footer {
     color: $text;
     scrollbar-background: $surface;
     scrollbar-color: $accent;
+}
+
+/* Focus states - red borders for focused containers */
+.focus-container:focus {
+    border: round red !important;
 }
 
 /* Color Scheme - Dark theme similar to the screenshot */
