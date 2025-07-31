@@ -1,7 +1,8 @@
-import paramiko
 import logging
-from typing import Optional, Tuple
 from pathlib import Path
+from typing import Optional, Tuple
+
+import paramiko
 
 from ..config import Config
 

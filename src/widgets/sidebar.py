@@ -1,14 +1,14 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Static
 from textual.message import Message
 from textual.reactive import reactive
+from textual.widgets import Static
 
-from .condor_job_list import CondorJobList
 from ..htcondor.htcondor import HTCondorClient
 from ..htcondor.types import CondorJob
+from .condor_job_list import CondorJobList
 
 
 class JobsSidebar(Vertical):
@@ -70,6 +70,7 @@ class JobsSidebar(Vertical):
         """Set the HTCondor client and username, then refresh jobs."""
         self.htcondor_client = client
         self.username = username
+        self.border_title = f"Cluster Jobs for {username}"
         self.refresh_jobs()
 
     class JobSelected(Message):

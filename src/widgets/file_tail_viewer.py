@@ -1,8 +1,10 @@
 from typing import Optional
+
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Static, TextArea
 from textual.reactive import reactive
+from textual.widgets import TextArea
+
 from ..ssh.cluster import SSHClient
 
 
@@ -26,16 +28,20 @@ class FileTailViewer(Vertical):
         self.tail_lines = tail_lines
         self.file_path = file_path
         self.border_title = self._get_header_text()
+        self.word_wrap = False
 
     def compose(self) -> ComposeResult:
         """Compose the file viewer layout."""
-        yield TextArea(
+        self.text_area = TextArea(
             "",
             read_only=True,
+            soft_wrap=self.word_wrap,
             show_line_numbers=True,
             highlight_cursor_line=False,
-            id="file-content",
+            show_cursor=False,
+            classes="file-content",
         )
+        yield self.text_area
 
     def on_mount(self) -> None:
         """Initialize content after the widget is mounted."""
@@ -67,7 +73,7 @@ class FileTailViewer(Vertical):
         # Only update if the widget is mounted and composed
         if self.is_mounted:
             try:
-                text_area = self.query_one("#file-content", TextArea)
+                text_area = self.query_one(".file-content", TextArea)
                 text_area.text = new_content
                 # Scroll to bottom to show latest content
                 text_area.scroll_end()
@@ -115,10 +121,9 @@ class FileTailViewer(Vertical):
 
     def _update_header(self) -> None:
         """Update the header text with current file path."""
-        if self.is_mounted:
-            try:
-                header = self.query_one("#file-header", Static)
-                header.update(self._get_header_text())
-            except Exception:
-                # Widget not fully composed yet, ignore
-                pass
+        self.border_title = self._get_header_text()
+
+    def toggle_word_wrap(self) -> None:
+        """Toggle word wrap."""
+        self.word_wrap = not self.word_wrap
+        self.text_area.soft_wrap = self.word_wrap

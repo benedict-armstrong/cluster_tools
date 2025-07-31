@@ -3,13 +3,13 @@
 from datetime import datetime
 from typing import List, Optional
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import ListView, ListItem, Static
-from textual.message import Message
-from rich.text import Text
+from textual.widgets import ListItem, ListView, Static
 
 from ..htcondor.types import CondorJob
 
@@ -23,7 +23,8 @@ class CondorJobItem(ListItem):
 
     def compose(self) -> ComposeResult:
         """Compose the job item layout."""
-        with Vertical(classes="job-item"):
+        with Vertical(classes="job-item") as cont:
+            cont.border_title = self.job.job_id
             with Horizontal(classes="job-line-1"):
                 yield Static(self._get_status_indicator(), classes="status-indicator")
                 yield Static(self._get_main_info(), classes="job-main-info")
@@ -174,7 +175,7 @@ class CondorJobList(Widget):
     def compose(self) -> ComposeResult:
         """Compose the job list widget."""
         with Vertical(classes="condor-job-list"):
-            yield Static("My Jobs", classes="job-list-header")
+            yield Static("Running Jobs", classes="job-list-header")
             yield ListView(id="job-list")
 
     def on_mount(self) -> None:
@@ -205,6 +206,10 @@ class CondorJobList(Widget):
 
         for job in sorted_jobs:
             job_list.append(CondorJobItem(job))
+
+        # Select the first job by default if we have jobs
+        if sorted_jobs:
+            job_list.index = 0
 
     def _get_status_priority(self, status: int) -> int:
         """Get priority for sorting jobs by status."""

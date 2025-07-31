@@ -1,11 +1,12 @@
 from typing import Optional
+
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.reactive import reactive
 
-from .file_tail_viewer import FileTailViewer
 from ..htcondor.types import CondorJob
 from ..ssh.cluster import SSHClient
+from .file_tail_viewer import FileTailViewer
 
 
 class JobFileViewer(Vertical):

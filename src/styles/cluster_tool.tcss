@@ -42,17 +42,18 @@ Footer {
     text-style: bold;
     color: $text;
     border-bottom: solid $border;
+    background: transparent;
 }
 
 #job-list {
     height: 1fr;
-    scrollbar-background: $surface;
-    scrollbar-color: $accent;
+    background: transparent;
 }
 
 .job-item {
     height: 8;
     padding: 1;
+    border: round $border;
 }
 
 .job-line-1 {
@@ -85,19 +86,11 @@ Footer {
     margin-left: 1;
 }
 
-.no-jobs {
-    content-align: center middle;
-    color: $text-muted;
-    text-style: italic;
-    height: 3;
-}
-
 /* Job File Viewer Styling */
 .file-viewer {
     height: 1fr;
     margin: 1;
     border: round $border;
-    background: $surface;
 }
 
 /* Job status colors */
@@ -150,7 +143,7 @@ Footer {
     padding-left: 1;
 }
 
-#file-content {
+.file-content {
     height: 1fr;
     background: $background;
     color: $text;
@@ -162,7 +155,7 @@ Footer {
 $background: #1e1e1e;
 $surface: #2d2d2d;
 $surface-lighten-1: #3d3d3d;
-$primary: #0d7377;
+$primary:rgb(176, 49, 172);
 $accent: #14a085;
 $success: #28a745;
 $success-darken-1: #1e7e34;
@@ -171,3 +164,23 @@ $error: #dc3545;
 $text: #ffffff;
 $text-muted: #888888;
 $border: #404040;
+
+/* Confirmation dialog styles */
+ConfirmCancelScreen {
+    align: center middle;
+}
+
+#dialog {
+    width: 50;
+    height: 9;
+    border: round $error;
+    padding: 1 2;
+}
+
+#question {
+    height: 3;
+    content-align: center middle;
+    text-align: center;
+    margin-bottom: 1;
+    color: $text-muted;
+}
