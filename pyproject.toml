@@ -1,5 +1,5 @@
 [project]
-name = "cluster-tools"
+name = "mpi-cluster-tools"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -10,3 +10,7 @@ dependencies = [
     "textual-dev>=1.7.0",
     "typer>=0.16.0",
 ]
+
+
+[project.scripts]
+cluster_tools = "src.main:cli"
