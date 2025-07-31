@@ -92,6 +92,14 @@ Footer {
     height: 3;
 }
 
+/* Job File Viewer Styling */
+.file-viewer {
+    height: 1fr;
+    margin: 1;
+    border: round $border;
+    background: $surface;
+}
+
 /* Job status colors */
 .status-running {
     color: $success;

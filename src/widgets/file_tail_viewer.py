@@ -25,13 +25,17 @@ class FileTailViewer(Vertical):
         self.ssh_client = ssh_client
         self.tail_lines = tail_lines
         self.file_path = file_path
+        self.border_title = self._get_header_text()
 
     def compose(self) -> ComposeResult:
         """Compose the file viewer layout."""
-        yield Static(
-            self._get_header_text(), classes="file-viewer-header", id="file-header"
+        yield TextArea(
+            "",
+            read_only=True,
+            show_line_numbers=True,
+            highlight_cursor_line=False,
+            id="file-content",
         )
-        yield TextArea("", read_only=True, show_line_numbers=False, id="file-content")
 
     def on_mount(self) -> None:
         """Initialize content after the widget is mounted."""
@@ -84,16 +88,16 @@ class FileTailViewer(Vertical):
         try:
             # Use tail command to get last N lines
             command = f"tail -n {self.tail_lines} '{self.file_path}' 2>/dev/null || echo 'File not found or not readable'"
-            result = self.ssh_client.execute_command(command)
+            (exit_code, stdout, stderr) = self.ssh_client.execute_command(command)
 
-            if result.exit_code == 0:
-                content = result.stdout.strip()
+            if exit_code == 0:
+                content = stdout.strip()
                 if content and content != "File not found or not readable":
                     self.content = content
                 else:
                     self.content = f"File not found: {self.file_path}"
             else:
-                self.content = f"Error reading file: {result.stderr}"
+                self.content = f"Error reading file: {stderr}"
 
         except Exception as e:
             self.content = f"Error: {str(e)}"

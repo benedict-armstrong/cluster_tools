@@ -87,13 +87,18 @@ class JobFileViewer(Vertical):
             error_viewer = self.query_one("#error-viewer", FileTailViewer)
             output_viewer = self.query_one("#output-viewer", FileTailViewer)
 
+            # Resolve file paths (prepend iwd for relative paths)
+            log_path = self._resolve_file_path(job.user_log, job.iwd)
+            error_path = self._resolve_file_path(job.error_file, job.iwd)
+            output_path = self._resolve_file_path(job.output_file, job.iwd)
+
             # Set file paths for each viewer (with debug info)
             print(
-                f"Setting job files - Log: {job.user_log}, Error: {job.error_file}, Output: {job.output_file}"
+                f"Setting job files - Log: {log_path}, Error: {error_path}, Output: {output_path}"
             )
-            log_viewer.set_file(job.user_log)
-            error_viewer.set_file(job.error_file)
-            output_viewer.set_file(job.output_file)
+            log_viewer.set_file(log_path)
+            error_viewer.set_file(error_path)
+            output_viewer.set_file(output_path)
         except Exception as e:
             print(f"Error updating file viewers: {e}")
             # Widget not fully composed yet, ignore
@@ -143,3 +148,23 @@ class JobFileViewer(Vertical):
         except Exception:
             # Widget not fully composed yet, ignore
             pass
+
+    def _resolve_file_path(
+        self, file_path: Optional[str], iwd: Optional[str]
+    ) -> Optional[str]:
+        """Resolve file path by prepending iwd for relative paths."""
+        if not file_path:
+            return file_path
+
+        # If path is already absolute, return as is
+        if file_path.startswith("/"):
+            return file_path
+
+        # If we have an iwd and the path is relative, prepend iwd
+        if iwd:
+            # Ensure iwd ends with / for proper path joining
+            iwd_normalized = iwd.rstrip("/") + "/"
+            return iwd_normalized + file_path
+
+        # No iwd available, return original path
+        return file_path
