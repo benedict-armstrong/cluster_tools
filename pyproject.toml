@@ -27,4 +27,4 @@ source = "vcs"
 raw-options = { local_scheme = "no-local-version", version_scheme = "only-version" }
 
 [project.scripts]
-mpi_cluster_tools = "src.main:main"
+mpi-cluster-tools = "src.main:main"
