@@ -4,10 +4,10 @@ from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widgets import Footer, Header
 
-from .widgets.cancel_confirm import ConfirmCancelScreen
 from .config import Config
 from .htcondor.htcondor import HTCondorClient
 from .ssh.cluster import SSHClient
+from .widgets.cancel_confirm import ConfirmCancelScreen
 from .widgets.job_file_viewer import JobFileViewer
 from .widgets.sidebar import JobsSidebar
 
@@ -45,9 +45,9 @@ class StatusFooter(Footer):
 
     def render(self):
         """Render the footer with refresh status."""
-        from rich.text import Text
-        from rich.columns import Columns
         from rich.align import Align
+        from rich.columns import Columns
+        from rich.text import Text
 
         # Create the key bindings text (similar to normal Footer)
         bindings_text = Text()

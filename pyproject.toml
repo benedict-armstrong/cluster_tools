@@ -24,10 +24,7 @@ packages = ["src"]
 
 [tool.hatch.version]
 source = "vcs"
-raw-options = { 
-    local_scheme = "no-local-version",
-    version_scheme = "no-guess-dev" 
-}
+raw-options = { local_scheme = "no-local-version", version_scheme = "no-guess-dev" }
 
 [project.scripts]
 mpi_cluster_tools = "src.main:main"

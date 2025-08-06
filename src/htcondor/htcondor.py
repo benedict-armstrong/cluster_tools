@@ -314,8 +314,8 @@ class HTCondorClient:
         Raises:
             RuntimeError: If job is not running or SSH connection setup fails
         """
-        import subprocess
         import shlex
+        import subprocess
 
         # Check if job is running
         if not job.is_running:
