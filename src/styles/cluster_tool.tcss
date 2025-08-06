@@ -45,6 +45,17 @@ Footer {
     background: transparent;
 }
 
+.job-section-header {
+    margin: 1 0;
+}
+
+.job-section-header .section-title {
+    content-align: left middle;
+    text-style: bold;
+    color: $accent;
+    padding-left: 1;
+}
+
 #job-list {
     height: 1fr;
     background: transparent;

@@ -15,6 +15,7 @@ class JobsSidebar(Vertical):
     """Sidebar for job management, displays HTCondor jobs"""
 
     jobs: reactive[List[CondorJob]] = reactive([])
+    job_history: reactive[List[CondorJob]] = reactive([])
     current_job: reactive[Optional[CondorJob]] = reactive(None)
 
     def __init__(
@@ -32,7 +33,9 @@ class JobsSidebar(Vertical):
 
     def compose(self) -> ComposeResult:
         """Compose the sidebar layout."""
-        yield CondorJobList(jobs=self.jobs, id="condor-job-list")
+        yield CondorJobList(
+            jobs=self.jobs, job_history=self.job_history, id="condor-job-list"
+        )
 
     def on_mount(self) -> None:
         """Load jobs when the sidebar is mounted."""
@@ -40,27 +43,67 @@ class JobsSidebar(Vertical):
             self.refresh_jobs()
 
     def refresh_jobs(self) -> None:
-        """Refresh the job list from HTCondor."""
+        """Refresh the job list and history from HTCondor."""
         if not self.htcondor_client or not self.username:
             print("HTCondor client or username not set, cannot refresh jobs")
             return
 
         try:
+            # Get current jobs
             jobs = self.htcondor_client.get_user_jobs(self.username)
             self.jobs = jobs
-            print(f"Loaded {len(jobs)} jobs for user {self.username}")
-            print(jobs)
+            print(f"Loaded {len(jobs)} current jobs for user {self.username}")
 
-            # Update the job list widget with new jobs
+            # Get job history
+            job_history = self.htcondor_client.get_user_job_history(self.username)
+            self.job_history = job_history
+            print(f"Loaded {len(job_history)} historical jobs for user {self.username}")
+
+            # Update the job list widget with new jobs and history
             job_list = self.query_one("#condor-job-list", CondorJobList)
             job_list.jobs = jobs
+            job_list.job_history = job_history
         except Exception as e:
             print(f"Failed to load jobs: {e}")
             self.jobs = []
+            self.job_history = []
 
             # Clear the job list widget on error
             job_list = self.query_one("#condor-job-list", CondorJobList)
             job_list.jobs = []
+            job_list.job_history = []
+
+    async def refresh_jobs_async(self) -> None:
+        """Refresh the job list and history from HTCondor asynchronously."""
+        if not self.htcondor_client or not self.username:
+            print("HTCondor client or username not set, cannot refresh jobs")
+            return
+
+        try:
+            # Get current jobs and history concurrently
+            jobs = await self.htcondor_client.get_user_jobs_async(self.username)
+            job_history = await self.htcondor_client.get_user_job_history_async(
+                self.username
+            )
+
+            self.jobs = jobs
+            self.job_history = job_history
+            print(f"Loaded {len(jobs)} current jobs for user {self.username}")
+            print(f"Loaded {len(job_history)} historical jobs for user {self.username}")
+
+            # Update the job list widget with new jobs and history
+            job_list = self.query_one("#condor-job-list", CondorJobList)
+            job_list.jobs = jobs
+            job_list.job_history = job_history
+        except Exception as e:
+            print(f"Failed to load jobs: {e}")
+            self.jobs = []
+            self.job_history = []
+
+            # Clear the job list widget on error
+            job_list = self.query_one("#condor-job-list", CondorJobList)
+            job_list.jobs = []
+            job_list.job_history = []
 
     def on_condor_job_list_job_selected(self, event: CondorJobList.JobSelected) -> None:
         """Handle job selection from the job list."""

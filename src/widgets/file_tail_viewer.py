@@ -113,6 +113,35 @@ class FileTailViewer(Vertical):
         except Exception as e:
             self.content = f"Error: {str(e)}"
 
+    async def refresh_content_async(self) -> None:
+        """Refresh the file content by reading the tail of the file asynchronously."""
+        if not self.ssh_client:
+            self.content = "No SSH client available"
+            return
+
+        if not self.file_path:
+            self.content = "No file path specified"
+            return
+
+        try:
+            # Use tail command to get last N lines
+            command = f"tail -n {self.tail_lines} '{self.file_path}' 2>/dev/null || echo 'File not found or not readable'"
+            (exit_code, stdout, stderr) = await self.ssh_client.execute_command_async(
+                command
+            )
+
+            if exit_code == 0:
+                content = stdout.strip()
+                if content and content != "File not found or not readable":
+                    self.content = content
+                else:
+                    self.content = f"File not found: {self.file_path}"
+            else:
+                self.content = f"Error reading file: {stderr}"
+
+        except Exception as e:
+            self.content = f"Error: {str(e)}"
+
     def set_file(self, file_path: Optional[str]) -> None:
         """Set a new file path to display."""
         self.file_path = file_path

@@ -65,6 +65,176 @@ class HTCondorClient:
             print(f"Failed to retrieve jobs for user {username}: {e}")
             raise
 
+    async def get_user_jobs_async(self, username: str) -> List[CondorJob]:
+        """
+        Get all jobs for a specific user asynchronously.
+
+        Args:
+            username: Username to query jobs for
+
+        Returns:
+            List of CondorJob objects
+
+        Raises:
+            RuntimeError: If command execution fails or returns invalid data
+        """
+        command = f"condor_q {username} -json"
+
+        try:
+            exit_code, stdout, stderr = await self.ssh_client.execute_command_async(
+                command
+            )
+
+            if exit_code != 0:
+                error_msg = f"condor_q command failed (exit code {exit_code}): {stderr}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+            if not stdout.strip():
+                print(f"No jobs found for user {username}")
+                return []
+
+            # Parse JSON output
+            try:
+                job_data = json.loads(stdout)
+                jobs = []
+
+                # HTCondor JSON format can be a list of jobs or empty
+                if isinstance(job_data, list):
+                    for job_dict in job_data:
+                        try:
+                            job = CondorJob.from_dict(job_dict)
+                            jobs.append(job)
+                        except Exception as e:
+                            print(f"Failed to parse job data: {e}")
+                            continue
+
+                print(f"Retrieved {len(jobs)} jobs for user {username}")
+                return jobs
+
+            except json.JSONDecodeError as e:
+                error_msg = f"Failed to parse condor_q JSON output: {e}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+        except Exception as e:
+            print(f"Failed to retrieve jobs for user {username}: {e}")
+            raise
+
+    def get_user_job_history(self, username: str) -> List[CondorJob]:
+        """
+        Get job history for a specific user.
+
+        Args:
+            username: Username to query job history for
+
+        Returns:
+            List of CondorJob objects from history
+
+        Raises:
+            RuntimeError: If command execution fails or returns invalid data
+        """
+        command = f"condor_history {username} -json"
+
+        try:
+            exit_code, stdout, stderr = self.ssh_client.execute_command(command)
+
+            if exit_code != 0:
+                error_msg = (
+                    f"condor_history command failed (exit code {exit_code}): {stderr}"
+                )
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+            if not stdout.strip():
+                print(f"No job history found for user {username}")
+                return []
+
+            # Parse JSON output
+            try:
+                job_data = json.loads(stdout)
+                jobs = []
+
+                # HTCondor JSON format can be a list of jobs or empty
+                if isinstance(job_data, list):
+                    for job_dict in job_data:
+                        try:
+                            job = CondorJob.from_dict(job_dict)
+                            jobs.append(job)
+                        except Exception as e:
+                            print(f"Failed to parse job history data: {e}")
+                            continue
+
+                print(f"Retrieved {len(jobs)} historical jobs for user {username}")
+                return jobs
+
+            except json.JSONDecodeError as e:
+                error_msg = f"Failed to parse condor_history JSON output: {e}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+        except Exception as e:
+            print(f"Failed to retrieve job history for user {username}: {e}")
+            raise
+
+    async def get_user_job_history_async(self, username: str) -> List[CondorJob]:
+        """
+        Get job history for a specific user asynchronously.
+
+        Args:
+            username: Username to query job history for
+
+        Returns:
+            List of CondorJob objects from history
+
+        Raises:
+            RuntimeError: If command execution fails or returns invalid data
+        """
+        command = f"condor_history {username} -json"
+
+        try:
+            exit_code, stdout, stderr = await self.ssh_client.execute_command_async(
+                command
+            )
+
+            if exit_code != 0:
+                error_msg = (
+                    f"condor_history command failed (exit code {exit_code}): {stderr}"
+                )
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+            if not stdout.strip():
+                print(f"No job history found for user {username}")
+                return []
+
+            # Parse JSON output
+            try:
+                job_data = json.loads(stdout)
+                jobs = []
+
+                # HTCondor JSON format can be a list of jobs or empty
+                if isinstance(job_data, list):
+                    for job_dict in job_data:
+                        try:
+                            job = CondorJob.from_dict(job_dict)
+                            jobs.append(job)
+                        except Exception as e:
+                            print(f"Failed to parse job history data: {e}")
+                            continue
+
+                print(f"Retrieved {len(jobs)} historical jobs for user {username}")
+                return jobs
+
+            except json.JSONDecodeError as e:
+                error_msg = f"Failed to parse condor_history JSON output: {e}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
+
+        except Exception as e:
+            print(f"Failed to retrieve job history for user {username}: {e}")
+            raise
+
     def get_job_status_summary(self, username: str) -> Dict[str, int]:
         """
         Get a summary of job statuses for a user.

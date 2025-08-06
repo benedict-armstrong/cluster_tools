@@ -1,6 +1,7 @@
 import typer
 from textual.app import App
 from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
 from textual.widgets import Footer, Header
 
 from .widgets.cancel_confirm import ConfirmCancelScreen
@@ -13,8 +14,9 @@ from .widgets.sidebar import JobsSidebar
 cli = typer.Typer()
 
 
-@cli.command()
-def cluster(
+@cli.callback(invoke_without_command=True)
+def cluster_command(
+    ctx: typer.Context,
     hostname: str = typer.Option(help="The hostname of the cluster"),
     port: int = typer.Option(22, help="The port to connect to the cluster"),
     username: str = typer.Option(help="The username to connect to the cluster"),
@@ -22,10 +24,46 @@ def cluster(
         None, help="The path to the private key to connect to the cluster"
     ),
 ):
-    """Run the application."""
-    config = Config(hostname, port, username, private_key_path)
-    app = ClusterApp(config)
-    app.run()
+    """Run the cluster monitoring tool."""
+    if ctx.invoked_subcommand is None:
+        config = Config(hostname, port, username, private_key_path)
+        app = ClusterApp(config)
+        app.run()
+
+
+class StatusFooter(Footer):
+    """Custom footer that shows refresh status."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.app_refreshing = False
+
+    def update_refresh_status(self, refreshing: bool) -> None:
+        """Update the refresh status display."""
+        self.app_refreshing = refreshing
+        self.refresh(layout=False)
+
+    def render(self):
+        """Render the footer with refresh status."""
+        from rich.text import Text
+        from rich.columns import Columns
+        from rich.align import Align
+
+        # Create the key bindings text (similar to normal Footer)
+        bindings_text = Text()
+        if self.app:
+            for binding in self.app.BINDINGS:
+                key, action, description = binding
+                bindings_text.append(f"{key}", style="bold white")
+                bindings_text.append(f" {description} ", style="dim white")
+
+        # Create refresh status if refreshing
+        if self.app_refreshing:
+            status_text = Text("🔄 Refreshing...", style="cyan bold")
+            # Combine bindings and status
+            return Columns([bindings_text, Align.right(status_text)], expand=True)
+        else:
+            return bindings_text
 
 
 class ClusterApp(App):
@@ -34,18 +72,25 @@ class ClusterApp(App):
     CSS_PATH = "styles/cluster_tool.tcss"
     BINDINGS = [
         ("d", "toggle_dark", "Toggle dark mode"),
-        ("r", "refresh_data", "Refresh data"),
+        ("r", "refresh_data_async", "Refresh data"),
         ("c", "cancel_job", "Cancel selected job"),
         ("s", "ssh_to_job", "SSH to selected job node"),
         ("q", "quit", "Quit"),
     ]
 
-    def __init__(self, config: Config):
+    refreshing = reactive(False)
+
+    def __init__(self, config: Config | None = None):
         super().__init__()
-        self.config = config
+        self.config = config or Config(
+            hostname="login.cluster.is.localnet",
+            username="barmstrong",
+            port=22,
+        )
         self.ssh_client = None
         self.htcondor_client = None
         self.title = "Condor Client"
+        self.auto_refresh_timer = None
 
     def compose(self):
         """Simple layout for cluster monitoring."""
@@ -54,11 +99,21 @@ class ClusterApp(App):
             yield JobsSidebar(id="sidebar", classes="container")
             with Vertical(id="main-content"):
                 yield JobFileViewer(ssh_client=None, classes="job-file-viewer")
-        yield Footer()
+        yield StatusFooter(id="status-footer")
 
     async def on_mount(self) -> None:
         """Initialize SSH and HTCondor clients when the app starts."""
         self._initialize_clients()
+        self._start_auto_refresh()
+
+    def watch_refreshing(self, refreshing: bool) -> None:
+        """Update footer when refresh status changes."""
+        try:
+            footer = self.query_one("#status-footer", StatusFooter)
+            footer.update_refresh_status(refreshing)
+        except Exception:
+            # Footer might not be mounted yet
+            pass
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
@@ -71,8 +126,10 @@ class ClusterApp(App):
         self.exit()
 
     def action_refresh_data(self) -> None:
-        """An action to refresh all data."""
+        """An action to refresh all data (synchronous version)."""
         try:
+            self.refreshing = True
+
             # Refresh the job list in the sidebar
             sidebar = self.query_one("#sidebar", JobsSidebar)
             sidebar.refresh_jobs()
@@ -84,6 +141,34 @@ class ClusterApp(App):
             print("Data refreshed successfully")
         except Exception as e:
             print(f"Error refreshing data: {e}")
+        finally:
+            self.refreshing = False
+
+    async def action_refresh_data_async(self) -> None:
+        """An action to refresh all data asynchronously."""
+        try:
+            self.refreshing = True
+
+            # Refresh the job list in the sidebar
+            sidebar = self.query_one("#sidebar", JobsSidebar)
+
+            # Refresh the file viewers
+            job_file_viewer = self.query_one("JobFileViewer", JobFileViewer)
+
+            # Run both refreshes concurrently
+            import asyncio
+
+            await asyncio.gather(
+                sidebar.refresh_jobs_async(),
+                job_file_viewer.refresh_all_async(),
+                return_exceptions=True,
+            )
+
+            print("Data refreshed successfully (async)")
+        except Exception as e:
+            print(f"Error refreshing data: {e}")
+        finally:
+            self.refreshing = False
 
     def action_cancel_job(self) -> None:
         """An action to cancel the currently selected job."""
@@ -180,6 +265,29 @@ class ClusterApp(App):
         except Exception as e:
             print(f"Error establishing SSH connection: {e}")
 
+    def _start_auto_refresh(self) -> None:
+        """Start the auto-refresh timer to update data every 5 seconds."""
+        print("Starting auto-refresh timer...")
+        if self.auto_refresh_timer is not None:
+            # Stop existing timer if it exists
+            self.auto_refresh_timer.stop()
+            print("Stopped existing timer")
+
+        # Set up a timer to refresh data every 5 seconds
+        self.auto_refresh_timer = self.set_interval(5.0, self._auto_refresh)
+
+    def _auto_refresh(self) -> None:
+        """Auto-refresh callback that updates all data asynchronously."""
+        try:
+            print("Auto-refreshing data...")
+            # Only refresh if clients are initialized
+            if self.ssh_client and self.htcondor_client:
+                # Schedule the async refresh to run as soon as possible
+                self.call_later(self.action_refresh_data_async)
+        except Exception as e:
+            # Silently handle errors to avoid spamming the console
+            print(f"Auto-refresh error: {e}")
+
     def _initialize_clients(self) -> None:
         """Initialize SSH and HTCondor clients."""
         try:
@@ -214,6 +322,12 @@ class ClusterApp(App):
 
     def on_unmount(self) -> None:
         """Clean up connections when the app shuts down."""
+        # Stop auto-refresh timer
+        if self.auto_refresh_timer is not None:
+            self.auto_refresh_timer.stop()
+            self.auto_refresh_timer = None
+
+        # Clean up SSH connection
         if self.ssh_client:
             try:
                 self.ssh_client.disconnect()
@@ -222,5 +336,10 @@ class ClusterApp(App):
                 print(f"Error disconnecting from cluster: {e}")
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the CLI tool."""
     cli()
+
+
+if __name__ == "__main__":
+    main()

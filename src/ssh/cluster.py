@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import Optional, Tuple
@@ -83,6 +84,20 @@ class SSHClient:
         except Exception as e:
             self.logger.error(f"Failed to execute command '{command}': {e}")
             raise
+
+    async def execute_command_async(self, command: str) -> Tuple[int, str, str]:
+        """
+        Execute a command on the remote server asynchronously.
+
+        Args:
+            command: Command to execute
+
+        Returns:
+            Tuple of (exit_code, stdout, stderr)
+        """
+        # Run the blocking SSH operation in a thread pool
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.execute_command, command)
 
     def is_connected(self) -> bool:
         """Check if SSH connection is active."""

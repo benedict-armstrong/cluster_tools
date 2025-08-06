@@ -155,6 +155,30 @@ class JobFileViewer(Vertical):
             # Widget not fully composed yet, ignore
             pass
 
+    async def refresh_all_async(self) -> None:
+        """Refresh content of all file viewers asynchronously."""
+        # Only update if the widget is mounted and composed
+        if not self.is_mounted:
+            return
+
+        try:
+            log_viewer = self.query_one("#log-viewer", FileTailViewer)
+            error_viewer = self.query_one("#error-viewer", FileTailViewer)
+            output_viewer = self.query_one("#output-viewer", FileTailViewer)
+
+            # Run all file refreshes concurrently
+            import asyncio
+
+            await asyncio.gather(
+                log_viewer.refresh_content_async(),
+                error_viewer.refresh_content_async(),
+                output_viewer.refresh_content_async(),
+                return_exceptions=True,
+            )
+        except Exception:
+            # Widget not fully composed yet, ignore
+            pass
+
     def _resolve_file_path(
         self, file_path: Optional[str], iwd: Optional[str]
     ) -> Optional[str]:

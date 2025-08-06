@@ -14,6 +14,19 @@ from textual.widgets import ListItem, ListView, Static
 from ..htcondor.types import CondorJob
 
 
+class JobSectionHeader(ListItem):
+    """A section header for job lists."""
+
+    def __init__(self, title: str, *args, **kwargs):
+        kwargs["classes"] = f"{kwargs.get('classes', '')} job-section-header".strip()
+        super().__init__(*args, **kwargs)
+        self.title = title
+
+    def compose(self) -> ComposeResult:
+        """Compose the section header."""
+        yield Static(self.title, classes="section-title")
+
+
 class CondorJobItem(ListItem):
     """A single job item in the job list."""
 
@@ -170,9 +183,16 @@ class CondorJobList(Widget):
     """Widget for displaying a list of HTCondor jobs."""
 
     jobs: reactive[List[CondorJob]] = reactive([])
+    job_history: reactive[List[CondorJob]] = reactive([])
     selected_job: reactive[Optional[CondorJob]] = reactive(None)
 
-    def __init__(self, jobs: Optional[List[CondorJob]] = None, *args, **kwargs):
+    def __init__(
+        self,
+        jobs: Optional[List[CondorJob]] = None,
+        job_history: Optional[List[CondorJob]] = None,
+        *args,
+        **kwargs,
+    ):
         # Add focus-container class
         if "classes" in kwargs:
             kwargs["classes"] = f"{kwargs['classes']} focus-container".strip()
@@ -181,6 +201,8 @@ class CondorJobList(Widget):
         super().__init__(*args, **kwargs)
         if jobs:
             self.jobs = jobs
+        if job_history:
+            self.job_history = job_history
 
     def compose(self) -> ComposeResult:
         """Compose the job list widget."""
@@ -196,35 +218,66 @@ class CondorJobList(Widget):
         """React to changes in the jobs list."""
         self._refresh_job_list()
 
+    def watch_job_history(self, job_history: List[CondorJob]) -> None:
+        """React to changes in the job history list."""
+        self._refresh_job_list()
+
     def _refresh_job_list(self) -> None:
-        """Refresh the job list display."""
+        """Refresh the job list display with sections for current jobs and history."""
         job_list = self.query_one("#job-list", ListView)
         job_list.clear()
 
-        if not self.jobs:
+        all_jobs = []
+        first_selectable_index = None
+
+        # Add current jobs section
+        if self.jobs:
+            job_list.append(JobSectionHeader("Current Jobs:"))
+
+            # Sort current jobs by status priority and submission time
+            sorted_jobs = sorted(
+                self.jobs,
+                key=lambda job: (
+                    self._get_status_priority(job.job_status),
+                    -(job.q_date.timestamp() if job.q_date else 0),
+                ),
+            )
+
+            for job in sorted_jobs:
+                if first_selectable_index is None:
+                    first_selectable_index = len(list(job_list.children))
+                job_list.append(CondorJobItem(job))
+                all_jobs.append(job)
+
+        # Add job history section
+        if self.job_history:
+            job_list.append(JobSectionHeader("Job History:"))
+
+            # Sort history jobs by submission time (most recent first)
+            sorted_history = sorted(
+                self.job_history,
+                key=lambda job: -(job.q_date.timestamp() if job.q_date else 0),
+            )
+
+            for job in sorted_history:
+                if first_selectable_index is None:
+                    first_selectable_index = len(list(job_list.children))
+                job_list.append(CondorJobItem(job))
+                all_jobs.append(job)
+
+        # If no jobs at all, show message
+        if not self.jobs and not self.job_history:
             job_list.append(ListItem(Static("No jobs found", classes="no-jobs")))
             return
 
-        # Sort jobs by status priority and submission time
-        sorted_jobs = sorted(
-            self.jobs,
-            key=lambda job: (
-                self._get_status_priority(job.job_status),
-                -(job.q_date.timestamp() if job.q_date else 0),
-            ),
-        )
-
-        for job in sorted_jobs:
-            job_list.append(CondorJobItem(job))
-
-        # Select the first job by default if we have jobs
-        if sorted_jobs:
-            job_list.index = 0
+        # Select the first selectable job by default
+        if all_jobs and first_selectable_index is not None:
+            job_list.index = first_selectable_index
             # Apply selected styling
-            self._update_selection_styling(0)
+            self._update_selection_styling(first_selectable_index)
             # Also update our selected_job and post the selection message
-            self.selected_job = sorted_jobs[0]
-            self.post_message(self.JobSelected(sorted_jobs[0]))
+            self.selected_job = all_jobs[0]
+            self.post_message(self.JobSelected(all_jobs[0]))
 
     def _get_status_priority(self, status: int) -> int:
         """Get priority for sorting jobs by status."""
