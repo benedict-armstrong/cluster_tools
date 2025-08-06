@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mpi-cluster-tools"
 dynamic = ["version"]
-description = "Add your description here"
+description = "A collection of tools for monitoring and managing jobs on the mpi cluster."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -14,9 +14,16 @@ dependencies = [
     "textual-dev>=1.7.0",
     "typer>=0.16.0",
 ]
+authors = [
+    { name = "Benedict Armstrong", email = "benedict.armstrong@inf.ethz.ch" },
+]
+
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+[tool.hatch.version.raw-options]
+version_scheme = "no-guess-dev"
 
 [tool.hatch.version]
 source = "vcs"
